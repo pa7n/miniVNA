@@ -1,5 +1,9 @@
 unit uCiaComport;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 {  Author: Mestdagh Wilfried
    Web:    http://www.mestdagh.biz
    eMail:  wilfried@mestdagh.biz

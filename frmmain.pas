@@ -8,11 +8,15 @@
 // *
 // *   WWW          : http://www.pa7n.nl
 // *
-// *   © 2012 Erwin van den Bosch (PA7N)
+// *   Â© 2012 Erwin van den Bosch (PA7N)
 // *
 // *****************************************************************************
 
 unit frmmain;
+
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
 
 interface
 
@@ -271,7 +275,7 @@ implementation
 
 {$R *.dfm}
 
-uses math, registry, procs32;
+uses math, registry;
 
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
@@ -280,7 +284,9 @@ begin
   panel.Anchors := [akLeft,akTop,akRight,akBottom];
   panel.BevelOuter := bvNone;
   panel.Cursor := crCross;
+  {$IFNDEF FPC}
   panel.ParentBackground := False;
+  {$ENDIF}
   panel.Top := 39;
   panel.Left := 8;
   panel.Width := 1168;
@@ -336,8 +342,10 @@ var
   i : integer;
   Pname, comStr: string;
 begin
+  {$IFNDEF FPC}
   Height := Round(Screen.Height * 0.9);
   Width  := Round(Screen.Width * 0.9);
+  {$ENDIF}
 
   eFstart.Text := FloatToStr(FUIstart / 1000);
   eFend.Text   := FloatToStr(FUIend / 1000);
@@ -1058,11 +1066,11 @@ begin
     Font.Style := [];
     Pen.Color := FPhaseColor;
 
-    DrawPhaseScale(FTopBorder, '0°', TRUE);
-    DrawPhaseScale(FTopBorder + (FClientHeight div 4), '45°', TRUE);
-    DrawPhaseScale(FTopBorder + 2 * (FClientHeight div 4), '90°', TRUE);
-    DrawPhaseScale(FTopBorder + 3 * (FClientHeight div 4), '135°', TRUE);
-    DrawPhaseScale(FPaintBitmap.Height - FBottomBorder, '180°', FALSE);
+    DrawPhaseScale(FTopBorder, '0Â°', TRUE);
+    DrawPhaseScale(FTopBorder + (FClientHeight div 4), '45Â°', TRUE);
+    DrawPhaseScale(FTopBorder + 2 * (FClientHeight div 4), '90Â°', TRUE);
+    DrawPhaseScale(FTopBorder + 3 * (FClientHeight div 4), '135Â°', TRUE);
+    DrawPhaseScale(FPaintBitmap.Height - FBottomBorder, '180Â°', FALSE);
 
     Font.Color := FZColor;
     Font.Style := [fsBold];

@@ -8,13 +8,21 @@
 // *
 // *   WWW          : http://www.pa7n.nl
 // *
-// *   © 2012 Erwin van den Bosch (PA7N)
+// *   Â© 2012 Erwin van den Bosch (PA7N)
 // *
 // *****************************************************************************
 
 program pa7nvna;
 
+{$IFDEF FPC}
+  {$MODE Delphi}
+{$ENDIF}
+
 uses
+{$IFNDEF FPC}
+{$ELSE}
+  Interfaces,
+{$ENDIF}
   Forms,
   frmmain in 'frmmain.pas' {MainForm},
   uCiaComPort in 'uCiaComPort.pas';
