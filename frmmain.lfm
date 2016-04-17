@@ -23,7 +23,7 @@ object MainForm: TMainForm
     AnchorSideBottom.Side = asrBottom
     Left = 100
     Height = 15
-    Top = 11
+    Top = 12
     Width = 48
     Alignment = taRightJustify
     Anchors = [akTop, akRight]
@@ -662,7 +662,7 @@ object MainForm: TMainForm
   end
   object cbComPort: TComboBox
     Left = 152
-    Height = 21
+    Height = 23
     Top = 8
     Width = 89
     ItemHeight = 15

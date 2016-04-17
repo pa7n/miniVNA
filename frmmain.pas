@@ -14,17 +14,19 @@
 
 unit frmmain;
 
+{$mode objfpc}{$H+}
+
 interface
 
 uses
   // Lazarus
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, SyncObjs, Themes, ExtCtrls,
+  Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, LCLType,
+  LMessages, LCLIntf, StdCtrls, SyncObjs, ExtCtrls,{$IFDEF WINDOWS} windows, {$ENDIF}
   // 3rd party
   uCiaComport;
 
 const
-  VNA_PROCESSDATA = WM_USER + 1;
+  VNA_PROCESSDATA = LM_USER + 1;
 
 type
   TPanelPlus = class(TPanel)
@@ -60,7 +62,7 @@ type
     FC              : extended;
     FQ              : extended;
   public
-     { Published declarations }
+    { Public declarations }
     property ADCMagnitude   : integer    read FADCMagnitude    write FADCMagnitude;
     property ADCAngle       : integer    read FADCAngle        write FADCAngle;
     property Magnitude      : extended   read FMagnitude       write FMagnitude;
@@ -239,8 +241,8 @@ type
     markerLowSWRx    : integer;
     comThread        : TComThread;
     workbuf          : pointer;
-    cs               : TCriticalSection;
-    FPaintBitmap     : TBitmap;
+    cs               : SyncObjs.TCriticalSection;
+    FPaintBitmap     : Graphics.TBitmap;
     FBackgroundColor : TColor;
     FSWRColor        : TColor;
     FRLColor         : TColor;
@@ -256,7 +258,7 @@ type
     FADCtoAngle      : Extended;
     procedure ProcessData( const buf: pointer );
     procedure CheckingNewScanParameters;
-    procedure EventProcessData(var msg: TMessage); message VNA_PROCESSDATA;
+    procedure EventProcessData(var msg: TLMessage); message VNA_PROCESSDATA;
     procedure PaintScale;
     procedure InternalPaint;
     procedure InternalProcessData;
@@ -338,10 +340,10 @@ begin
   markerLowSWRx    := -1;
   comThread        := nil;
   FVNAList         := TVNAList.Create;
-  cs               := TCriticalSection.Create;
+  cs               := SyncObjs.TCriticalSection.Create;
   GetMem(workbuf, 16000);
-  FillMemory(workbuf, 16000, 0);
-  FPaintBitmap := Tbitmap.Create;
+  FillByte(workbuf^, 16000, 0);
+  FPaintBitmap := Graphics.TBitmap.Create;
 end;
 
 procedure TMainForm.FormShow(Sender: TObject);
@@ -612,7 +614,7 @@ begin
   FUIsteps := Fs;
 end;
 
-procedure TMainForm.EventProcessData(var msg: TMessage);
+procedure TMainForm.EventProcessData(var msg: TLMessage);
 begin
   FDataAvailable := TRUE;
   InternalProcessData;
@@ -630,9 +632,9 @@ end;
 
 procedure TMainForm.InternalPaint;
 var
-  FFinalBitmap  : TBitmap;
+  FFinalBitmap  : Graphics.TBitmap;
 begin
-  FFinalBitmap := TBitmap.Create;
+  FFinalBitmap := Graphics.TBitmap.Create;
   FFinalBitmap.PixelFormat := pf24bit;
   FFinalBitmap.Width := panel.Width;
   FFinalBitmap.Height := panel.Height;
@@ -945,7 +947,7 @@ var
 
   procedure DrawSWRlogScale( aValue: Extended; aText: string; DrawALine: boolean );
   var y : integer;
-      r : TRect;
+      r : Classes.TRect;
   begin
     with FPaintBitmap.Canvas do begin
       Pen.Color := FSWRColor;
@@ -961,24 +963,25 @@ var
         Pen.Style := psSolid;
       end;
 
-      r :=  Rect(FLeftBorder - 40,
+      r :=  Classes.Rect(FLeftBorder - 40,
                  FPaintBitmap.Height - FBottomBorder - y - (TextHeight(aText) div 2),
                  FLeftBorder - 15,
                  FPaintBitmap.Height - FBottomBorder - y + (TextHeight(aText) div 2)
                 );
+
       DrawText(Handle, PChar(aText), -1, R, DT_RIGHT or DT_SINGLELINE or DT_VCENTER);
     end;
   end;
 
   procedure DrawRLscale( y: integer; aText: string);
   var
-    r : TRect;
+    r : Classes.TRect;
   begin
     with FPaintBitmap.Canvas do begin
       MoveTo(FLeftBorder - 45, y);
       LineTo(FLeftBorder - 35, y);
 
-      r :=  Rect(0,
+      r :=  Classes.Rect(0,
                  y - (TextHeight(aText) div 2),
                  FLeftBorder - 50,
                  y + (TextHeight(aText) div 2)
@@ -989,7 +992,7 @@ var
 
   procedure DrawPhaseScale( y: integer; aText: string; DrawALine: boolean);
   var
-    r : TRect;
+    r : Classes.TRect;
   begin
     with FPaintBitmap.Canvas do begin
       Pen.Color := FPhaseColor;
@@ -1004,7 +1007,7 @@ var
         Pen.Style := psSolid;
       end;
 
-      r :=  Rect(FPaintBitmap.Width - FRightBorder + 10,
+      r :=  Classes.Rect(FPaintBitmap.Width - FRightBorder + 10,
                  y - (TextHeight(aText) div 2),
                  FPaintBitmap.Width - FRightBorder + 40,
                  y + (TextHeight(aText) div 2)
@@ -1015,7 +1018,7 @@ var
 
   procedure DrawZXRscale( y: integer; aText: string; DrawALine: boolean);
   var
-    r : TRect;
+    r : Classes.TRect;
   begin
     with FPaintBitmap.Canvas do begin
       Pen.Color := FZColor;
@@ -1030,7 +1033,7 @@ var
         Pen.Style := psSolid;
       end;
 
-      r :=  Rect(FPaintBitmap.Width - FRightBorder + 60,
+      r :=  Classes.Rect(FPaintBitmap.Width - FRightBorder + 60,
                  y - (TextHeight(aText) div 2),
                  FPaintBitmap.Width - FRightBorder + 85,
                  y + (TextHeight(aText) div 2)
@@ -1049,7 +1052,7 @@ begin
 
     Brush.Color := FBackgroundColor;
     Pen.Color   := FBackgroundColor;
-    FillRect(Rect(0, 0, panel.Width, panel.Height));
+    FillRect(Classes.Rect(0, 0, panel.Width, panel.Height));
 
     Pen.Color := clGreen;
     MoveTo(FLeftBorder, FPaintBitmap.Height - FBottomBorder );
@@ -1152,12 +1155,15 @@ end;
 procedure TMainForm.ProcessData( const buf: pointer );
 begin
   cs.Enter;
-  Fstart := comThread.Fstart;
-  Fend   := comThread.Fend;
-  Fsteps := comThread.Fsteps;
-  FDDSstep := comThread.FDDSstep;
-  CopyMemory(workbuf, buf, Fsteps*4);
-  cs.Leave;
+  try
+    Fstart := comThread.Fstart;
+    Fend   := comThread.Fend;
+    Fsteps := comThread.Fsteps;
+    FDDSstep := comThread.FDDSstep;
+    Move(buf^, workbuf^, Fsteps*4);
+  finally
+    cs.Leave;
+  end;
 
   Postmessage( Handle, VNA_PROCESSDATA, 0, 0 );
 end;
@@ -1315,10 +1321,10 @@ begin
   inherited;
   // Als we dit niet doen dan word de achtergrond doorzichtig en valt er niets
   // meer te kleuren. En dat wil je meestal met een TPanel.
-  if ThemeServices.ThemesEnabled then
-  begin
+//  if ThemeServices.ThemesEnabled then
+//  begin
     ControlStyle := ControlStyle - [csParentBackground];
-  end;
+//  end;
 end;
 
 procedure TPanelPlus.Paint;
