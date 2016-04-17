@@ -14,15 +14,8 @@
 
 program pa7nvna;
 
-{$IFDEF FPC}
-  {$MODE Delphi}
-{$ENDIF}
-
 uses
-{$IFNDEF FPC}
-{$ELSE}
   Interfaces,
-{$ENDIF}
   Forms,
   frmmain in 'frmmain.pas' {MainForm},
   uCiaComPort in 'uCiaComPort.pas';
@@ -31,7 +24,6 @@ uses
 
 begin
   Application.Initialize;
-  Application.MainFormOnTaskbar := True;
   Application.Title := 'PA7N miniVNA';
   Application.CreateForm(TMainForm, MainForm);
   Application.Run;

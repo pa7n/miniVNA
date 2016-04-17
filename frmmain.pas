@@ -8,20 +8,16 @@
 // *
 // *   WWW          : http://www.pa7n.nl
 // *
-// *   © 2012 Erwin van den Bosch (PA7N)
+// *   © 2012-2016 Erwin van den Bosch (PA7N)
 // *
 // *****************************************************************************
 
 unit frmmain;
 
-{$IFDEF FPC}
-  {$MODE Delphi}
-{$ENDIF}
-
 interface
 
 uses
-  // Delphi
+  // Lazarus
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, SyncObjs, Themes, ExtCtrls,
   // 3rd party
@@ -113,9 +109,11 @@ type
     procedure Execute; override;
   end;
 
+  { TMainForm }
+
   TMainForm = class(TForm)
-    GroupBox1: TGroupBox;
-    GroupBox2: TGroupBox;
+    gbValues: TGroupBox;
+    gbSettings: TGroupBox;
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
@@ -147,7 +145,7 @@ type
     marker1_Xs: TLabel;
     marker2_Rs: TLabel;
     marker2_Xs: TLabel;
-    GroupBox3: TGroupBox;
+    gbPlot: TGroupBox;
     cbSWR: TCheckBox;
     cbRL: TCheckBox;
     cbPhase: TCheckBox;
@@ -179,7 +177,7 @@ type
     lowswr_Q: TLabel;
     marker1_Q: TLabel;
     marker2_Q: TLabel;
-    GroupBox4: TGroupBox;
+    gbLCcalc: TGroupBox;
     rbCalcL: TRadioButton;
     rbCalcC: TRadioButton;
     eCorL: TEdit;
@@ -197,7 +195,7 @@ type
     Label28: TLabel;
     procedure btnStartClick(Sender: TObject);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
-    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCreate(Sender: TObject);
     procedure PanelResize(Sender: TObject);
     procedure PanelPaint(Sender: TObject);
@@ -273,29 +271,40 @@ var
 
 implementation
 
-{$R *.dfm}
+{$R *.lfm}
 
-uses math, registry;
+uses
+  math, registry;
 
 procedure TMainForm.FormCreate(Sender: TObject);
 begin
   panel := TPanelPlus.Create(self);
   panel.Parent := Self;
   panel.Anchors := [akLeft,akTop,akRight,akBottom];
+  panel.AnchorSideLeft.Side := asrLeft;
+  panel.AnchorSideLeft.Control := Self;
+  panel.BorderSpacing.Left := 8;
+
+  panel.AnchorSideTop.Side := asrBottom;
+  panel.AnchorSideTop.Control := btnStart;
+  panel.BorderSpacing.Top := 8;
+
+  panel.AnchorSideRight.Side := asrRight;
+  panel.AnchorSideRight.Control := Self;
+  panel.BorderSpacing.Right := 8;
+
+  panel.AnchorSideBottom.Side := asrTop;
+  panel.AnchorSideBottom.Control := gbSettings;
+  panel.BorderSpacing.Bottom := 8;
+
   panel.BevelOuter := bvNone;
   panel.Cursor := crCross;
-  {$IFNDEF FPC}
-  panel.ParentBackground := False;
-  {$ENDIF}
-  panel.Top := 39;
-  panel.Left := 8;
-  panel.Width := 1168;
-  panel.Height := 550;
-  panel.OnMouseDown := panelMouseDown;
-  panel.OnPaint := PanelPaint;
-  panel.OnResize := PanelResize;
+  panel.OnMouseDown := @panelMouseDown;
+  panel.OnPaint := @PanelPaint;
+  panel.OnResize := @PanelResize;
 
-  DecimalSeparator  := '.';
+  DefaultFormatSettings.DecimalSeparator := '.';
+  DefaultFormatSettings.ThousandSeparator := #0;
   FDataAvailable   := FALSE;
   FCalRL           := -0.7;
   FCalcCorL        := 100;
@@ -339,13 +348,11 @@ procedure TMainForm.FormShow(Sender: TObject);
 var
   reg: TRegistry;
   strList : TStringList;
-  i : integer;
+  i, ci : integer;
   Pname, comStr: string;
 begin
-  {$IFNDEF FPC}
-  Height := Round(Screen.Height * 0.9);
-  Width  := Round(Screen.Width * 0.9);
-  {$ENDIF}
+  //Height := Round(Screen.Height * 0.9);
+  //Width  := Round(Screen.Width * 0.9);
 
   eFstart.Text := FloatToStr(FUIstart / 1000);
   eFend.Text   := FloatToStr(FUIend / 1000);
@@ -359,7 +366,11 @@ begin
   Pname := '';
   for i := 0 to strList.Count - 1 do begin
     comStr := reg.ReadString(strList[i]);
-    cbComPort.AddItem( comStr, Pointer(StrToInt(Copy(comStr, 4, Length(comStr)-3))) );
+    try
+      ci := StrToInt(Copy(comStr, 4, Length(comStr)-3));
+      cbComPort.AddItem( comStr, TObject(ci) );
+    except
+    end;
     if Pos('VCP', strList[i]) > 0 then
       Pname := reg.ReadString( strList[i] );
   end;
@@ -387,7 +398,7 @@ begin
     comThread.Fend   := FUIend;
     comThread.Fsteps := FUIsteps;
     comThread.FCom   := Integer(cbComPort.Items.Objects[cbComPort.ItemIndex]);
-    comThread.Resume;
+    comThread.Start;
   end;
 end;
 
@@ -419,11 +430,14 @@ end;
 procedure TMainForm.CheckingNewScanParameters;
 begin
   cs.Enter;
-  comThread.Fstart   := FUIstart;
-  comThread.Fend     := FUIend;
-  comThread.Fsteps   := FUIsteps;
-  comThread.FDDSstep := FUIDDSstep;
-  cs.Leave;
+  try
+    comThread.Fstart   := FUIstart;
+    comThread.Fend     := FUIend;
+    comThread.Fsteps   := FUIsteps;
+    comThread.FDDSstep := FUIDDSstep;
+  finally
+    cs.Leave;
+  end;
 end;
 
 procedure TMainForm.CloseComPort;
@@ -573,8 +587,8 @@ end;
 
 procedure TMainForm.eFstartEndKeyPress(Sender: TObject; var Key: Char);
 begin
-  if (not (Key in ['0'..'9', DecimalSeparator]) and (Key >= #32)) or
-                     ((Key = DecimalSeparator) and (Pos(DecimalSeparator, Text) > 0))
+  if (not (Key in ['0'..'9', DefaultFormatSettings.DecimalSeparator]) and (Key >= #32)) or
+                     ((Key = DefaultFormatSettings.DecimalSeparator) and (Pos(DefaultFormatSettings.DecimalSeparator, Text) > 0))
   then begin
     Key := #0;
   end;
@@ -724,17 +738,32 @@ begin
       rr := f * VNAEntry.Magnitude;
       ss := g * VNAEntry.Magnitude;
 
-      VNAEntry.Xs  := Abs(((2 * ss) / (((1 - rr)*(1 - rr)) + (ss * ss))) * 50);
-      VNAEntry.Rs  := Abs(((1 - (rr*rr) - (ss*ss)) / (((1 - rr)*(1 - rr)) + (ss*ss))) * 50);
-      VNAEntry.SWR := abs( (1 + VNAEntry.Magnitude) / (1 - VNAEntry.Magnitude) );
+      if (rr < 1) or (ss>0) then begin
+        VNAEntry.Xs  := Abs(((2 * ss) / (((1 - rr)*(1 - rr)) + (ss * ss))) * 50);
+        VNAEntry.Rs  := Abs(((1 - (rr*rr) - (ss*ss)) / (((1 - rr)*(1 - rr)) + (ss*ss))) * 50);
+      end
+      else begin
+        VNAEntry.Xs  := 0;
+        VNAEntry.Rs  := 9999.99; // should be infinity
+      end;
+      if VNAEntry.Magnitude < 1 then
+        VNAEntry.SWR := abs( (1 + VNAEntry.Magnitude) / (1 - VNAEntry.Magnitude) )
+      else
+        VNAEntry.SWR := 999.99; // should be infinity
       VNAEntry.Z   := Sqrt(VNAEntry.Rs*VNAEntry.Rs + VNAEntry.Xs*VNAEntry.Xs);
       if VNAEntry.Rs > 0 then
         VNAEntry.Q   := Abs(VNAEntry.Xs / VNAEntry.Rs)
       else
         VNAEntry.Q   := 9999;
 
-      VNAEntry.L := VNAEntry.Xs / (2*PI*VNAEntry.Frequency);
-      VNAEntry.C := 1 / (2*PI*VNAEntry.Frequency*VNAEntry.Xs) * 1E6;
+      if VNAEntry.Xs <> 0 then begin
+        VNAEntry.L := VNAEntry.Xs / (2*PI*VNAEntry.Frequency);
+        VNAEntry.C := 1 / (2*PI*VNAEntry.Frequency*VNAEntry.Xs) * 1E6;
+      end
+      else begin
+        VNAEntry.L := 0;
+        VNAEntry.C := 0;  // should be infinity
+      end;
 
       if VNAEntry.SWR <= lowSWR then begin
         lowSWR := VNAEntry.SWR;
@@ -980,7 +1009,7 @@ var
                  FPaintBitmap.Width - FRightBorder + 40,
                  y + (TextHeight(aText) div 2)
                 );
-      DrawText(Handle, PChar(aText), -1, R, DT_RIGHT or DT_SINGLELINE or DT_VCENTER);
+      DrawText(Handle, PChar(Utf8ToAnsi(aText)), -1, R, DT_RIGHT or DT_SINGLELINE or DT_VCENTER);
     end;
   end;
 
@@ -1149,9 +1178,9 @@ begin
   end;
 end;
 
-procedure TMainForm.FormClose(Sender: TObject; var Action: TCloseAction);
+procedure TMainForm.FormClose(Sender: TObject; var CloseAction: TCloseAction);
 begin
-  Action := caFree;
+  CloseAction := caFree;
 end;
 
 procedure TMainForm.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
@@ -1190,7 +1219,7 @@ begin
   ComPort.StopBits := sbOne;
   ComPort.Parity   := ptNone;
   ComPort.FlowCtrl.XonXoff := False;
-  ComPort.OnDataAvailable  := ComPortDataAvailable;
+  ComPort.OnDataAvailable  := @ComPortDataAvailable;
   ComPort.RxBuffer := 16384;
   ComPort.Open := TRUE;
   ComPort.PurgeTx;

@@ -209,6 +209,7 @@ type
     FTxCtsFlow: boolean;
     FTxDsrFlow: boolean;
     FXonOff: boolean;
+  public
     constructor Create(Port: TCiaComPort);
     procedure SetRxDtrControl(Value: TDtrControl);
     procedure SetRxRtsControl(Value: TRtsControl);
